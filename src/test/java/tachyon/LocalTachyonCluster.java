@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import tachyon.client.TachyonFS;
 import tachyon.conf.CommonConf;
@@ -51,8 +52,8 @@ public class LocalTachyonCluster {
   private List<TachyonFS> mClients = new ArrayList<TachyonFS>();
 
   public LocalTachyonCluster(long workerCapacityBytes) {
-    mMasterPort = Constants.DEFAULT_MASTER_PORT - 1000;
-    mWorkerPort = Constants.DEFAULT_WORKER_PORT - 1000;
+    mMasterPort = TestUtils.getMasterPort();
+    mWorkerPort = TestUtils.getWorkerPort();
     mWorkerCapacityBytes = workerCapacityBytes;
   }
 
@@ -80,7 +81,7 @@ public class LocalTachyonCluster {
   }
 
   WorkerServiceHandler getWorkerServiceHandler() {
-    return mWorker.getWorkerServiceHandler();    
+    return mWorker.getWorkerServiceHandler();
   }
 
   MasterInfo getMasterInfo() {
@@ -150,7 +151,7 @@ public class LocalTachyonCluster {
     CommonUtils.sleepMs(null, 10);
 
     mWorker = Worker.createWorker(
-        new InetSocketAddress(mLocalhostName, mMasterPort), 
+        new InetSocketAddress(mLocalhostName, mMasterPort),
         new InetSocketAddress(mLocalhostName, mWorkerPort),
         mWorkerPort + 1, 1, 1, 1, mWorkerDataFolder, mWorkerCapacityBytes);
     Runnable runWorker = new Runnable() {

@@ -37,6 +37,7 @@ function runTest {
     exit 1
   fi
 
+  START=$(date +%s)
   MASTER_ADDRESS=$TACHYON_MASTER_ADDRESS
   if [ -z $TACHYON_MASTER_ADDRESS ] ; then
     MASTER_ADDRESS=localhost
@@ -45,12 +46,14 @@ function runTest {
   if [[ "$1" == "Basic" ]]; then
     tachyon tfs rm /Basic_File_$2
     $JAVA -cp $TACHYON_CONF_DIR/:$TACHYON_JAR tachyon.examples.BasicOperations $MASTER_ADDRESS:19998 /Basic_File_$2 $2
-    exit 0
   elif [[ "$1" == "BasicRawTable" ]]; then
     tachyon tfs rm /Basic_Raw_Table_$2
     $JAVA -cp $TACHYON_CONF_DIR/:$TACHYON_JAR tachyon.examples.BasicRawTableOperations $MASTER_ADDRESS:19998 /Basic_Raw_Table_$2 $2
-    exit 0
   fi
+
+  END=$(date +%s)
+  DIFF=$(( $END - $START ))
+  echo "$1 $2 took $DIFF seconds"
 
   echo $Usage
 }
@@ -109,6 +112,7 @@ elif [ "$COMMAND" == "runTest" ]; then
   exit 0
 elif [ "$COMMAND" == "runTests" ]; then
   declare -a opArr=(MUST_CACHE TRY_CACHE CACHE_THROUGH THROUGH)
+  START=$(date +%s)
 
   for op in ${opArr[@]}
   do
@@ -117,6 +121,10 @@ elif [ "$COMMAND" == "runTests" ]; then
     echo $bin/tachyon runTest BasicRawTable $op
     $bin/tachyon runTest BasicRawTable $op
   done
+
+  END=$(date +%s)
+  DIFF=$(( $END - $START ))
+  echo "$COMMAND took $DIFF seconds"
 
   exit 0
 elif [ "$COMMAND" == "killAll" ]; then

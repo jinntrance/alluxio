@@ -18,13 +18,46 @@ package tachyon;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import com.google.common.collect.Maps;
 import tachyon.client.OutStream;
 import tachyon.client.TachyonFS;
 import tachyon.client.TachyonFile;
 import tachyon.client.WriteType;
 
 public final class TestUtils {
+
+  private static List<Integer> masterPorts= Collections.synchronizedList(new ArrayList<Integer>());
+  private static List<Integer> workerPorts= Collections.synchronizedList(new ArrayList<Integer>());
+
+  public static int getWorkerPort(){
+    int port = Constants.DEFAULT_WORKER_PORT - randomInt();
+    while (workerPorts.contains(port)) {
+      port = Constants.DEFAULT_WORKER_PORT - randomInt();
+    }
+    workerPorts.add(port);
+    return port;
+  }
+
+  private static int randomInt() {
+    return new Random().nextInt(4000);
+  }
+
+  public static int getMasterPort(){
+    int port = Constants.DEFAULT_MASTER_PORT - randomInt();
+    while (masterPorts.contains(port)) {
+      port = Constants.DEFAULT_MASTER_PORT - randomInt();
+    }
+    masterPorts.add(port);
+    return port;
+  }
+
   /**
    * Create a simple file with <code>len</code> bytes.
    * @param tfs

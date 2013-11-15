@@ -59,7 +59,7 @@ public class Worker implements Runnable {
     MasterAddress = masterAddress;
     WorkerAddress = workerAddress;
 
-    mWorkerStorage = 
+    mWorkerStorage =
         new WorkerStorage(MasterAddress, WorkerAddress, dataFolder, memoryCapacityBytes);
 
     mWorkerServiceHandler = new WorkerServiceHandler(mWorkerStorage);
@@ -80,7 +80,7 @@ public class Worker implements Runnable {
       //          .selectorThreads(selectorThreads).acceptQueueSizePerThread(acceptQueueSizePerThreads)
       //          .workerThreads(workerThreads));
 
-      // This is for Thrift 0.7.0, for Hive compatibility. 
+      // This is for Thrift 0.7.0, for Hive compatibility.
       mServerTNonblockingServerSocket = new TNonblockingServerSocket(workerAddress);
       mServer = new THsHaServer(new THsHaServer.Args(mServerTNonblockingServerSocket).
           processor(processor).workerThreads(workerThreads));
@@ -115,7 +115,7 @@ public class Worker implements Runnable {
         CommonUtils.sleepMs(LOG, 1000);
         cmd = null;
         if (System.currentTimeMillis() - lastHeartbeatMs >= WorkerConf.get().HEARTBEAT_TIMEOUT_MS) {
-          System.exit(-1);
+          CommonUtils.runtimeException("Heard beat is inconsistent");
         }
       }
 
@@ -147,21 +147,21 @@ public class Worker implements Runnable {
     }
   }
 
-  public static synchronized Worker createWorker(InetSocketAddress masterAddress, 
+  public static synchronized Worker createWorker(InetSocketAddress masterAddress,
       InetSocketAddress workerAddress, int dataPort, int selectorThreads,
       int acceptQueueSizePerThreads, int workerThreads, String localFolder, long spaceLimitBytes) {
-    return new Worker(masterAddress, workerAddress, dataPort, selectorThreads, 
+    return new Worker(masterAddress, workerAddress, dataPort, selectorThreads,
         acceptQueueSizePerThreads, workerThreads, localFolder, spaceLimitBytes);
   }
 
-  public static synchronized Worker createWorker(String masterAddress, 
+  public static synchronized Worker createWorker(String masterAddress,
       String workerAddress, int dataPort, int selectorThreads, int acceptQueueSizePerThreads,
       int workerThreads, String localFolder, long spaceLimitBytes) {
     String[] address = masterAddress.split(":");
     InetSocketAddress master = new InetSocketAddress(address[0], Integer.parseInt(address[1]));
     address = workerAddress.split(":");
     InetSocketAddress worker = new InetSocketAddress(address[0], Integer.parseInt(address[1]));
-    return new Worker(master, worker, dataPort, selectorThreads, 
+    return new Worker(master, worker, dataPort, selectorThreads,
         acceptQueueSizePerThreads, workerThreads, localFolder, spaceLimitBytes);
   }
 
@@ -196,7 +196,7 @@ public class Worker implements Runnable {
       System.exit(-1);
     }
     WorkerConf wConf = WorkerConf.get();
-    Worker worker = Worker.createWorker(wConf.MASTER_HOSTNAME + ":" + wConf.MASTER_PORT, 
+    Worker worker = Worker.createWorker(wConf.MASTER_HOSTNAME + ":" + wConf.MASTER_PORT,
         args[0] + ":" + wConf.PORT, wConf.DATA_PORT,
         wConf.SELECTOR_THREADS, wConf.QUEUE_SIZE_PER_SELECTOR,
         wConf.SERVER_THREADS, wConf.DATA_FOLDER, wConf.MEMORY_SIZE);
@@ -204,7 +204,7 @@ public class Worker implements Runnable {
   }
 
   /**
-   * Get the worker server handler class. This is for unit test only. 
+   * Get the worker server handler class. This is for unit test only.
    * @return the WorkerServiceHandler
    */
   WorkerServiceHandler getWorkerServiceHandler() {

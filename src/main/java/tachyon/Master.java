@@ -72,7 +72,8 @@ public class Master {
       }
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      System.exit(-1);
+      CommonUtils.runtimeException(e);
+//      System.exit(-1);
     }
   }
 
@@ -105,7 +106,7 @@ public class Master {
         mLeaderSelectorClient.start();
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
-        System.exit(-1);
+        CommonUtils.runtimeException(e);
       }
 
       Thread currentThread = Thread.currentThread();
@@ -119,7 +120,7 @@ public class Master {
               setup();
             } catch (TTransportException | IOException e) {
               LOG.error(e.getMessage(), e);
-              System.exit(-1);
+              CommonUtils.runtimeException(e);
             }
             mWebServer.startWebServer();
             LOG.info("The master (leader) server started @ " + mMasterAddress);
@@ -141,7 +142,7 @@ public class Master {
         setup();
       } catch (TTransportException | IOException e) {
         LOG.error(e.getMessage(), e);
-        System.exit(-1);
+        CommonUtils.runtimeException(e);
       }
 
       mWebServer.startWebServer();
