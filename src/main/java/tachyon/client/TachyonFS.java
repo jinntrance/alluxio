@@ -289,7 +289,7 @@ public class TachyonFS {
 
     if (!ret.exists()) {
       if (ret.mkdir()) {
-        CommonUtils.changeToFullPermission(ret.getAbsolutePath());
+        CommonUtils.changeLocalFileToFullPermission(ret.getAbsolutePath());
         LOG.info("Folder " + ret + " was created!");
       } else {
         LOG.error("Failed to create folder " + ret);
@@ -460,7 +460,7 @@ public class TachyonFS {
     ClientFileInfo info = null;
     if (!fetch) {
       info = mClientFileInfos.get(fId);
-      if (info.blockIds.size() <= blockIndex) {
+      if (info.isFolder() || info.blockIds.size() <= blockIndex) {
         fetch = true;
       }
     }
@@ -473,6 +473,9 @@ public class TachyonFS {
 
     if (info == null) {
       throw new IOException("File " + fId + " does not exist.");
+    }
+    if (info.isFolder()) {
+      throw new IOException(new FileDoesNotExistException("File " + fId + " is a folder."));
     }
     if (info.blockIds.size() <= blockIndex) {
       throw new IOException("BlockIndex " + blockIndex + " is out of the bound in file " + info);
