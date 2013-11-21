@@ -16,24 +16,28 @@
  */
 package tachyon.client;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import tachyon.CommonUtils;
-import tachyon.Constants;
-import tachyon.LocalTachyonCluster;
-import tachyon.TestUtils;
-import tachyon.UnderFileSystem;
+import tachyon.*;
 import tachyon.client.table.RawTable;
 import tachyon.thrift.ClientWorkerInfo;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
+import static java.nio.file.attribute.PosixFilePermission.*;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
 
 /**
  * Unit tests on TachyonClient.
@@ -432,5 +436,21 @@ public class TachyonFSTest {
       tFile = mTfs.getFile(fileIds.get(k));
       Assert.assertTrue(tFile.isInMemory());
     }
+  }
+
+  @Test
+  public void createAndGetUserTempFolderTest() throws IOException {
+      String userFolder=mTfs.createAndGetUserTempFolder().getAbsolutePath();
+      Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(Paths.get(userFolder));
+      Set<PosixFilePermission> fullPermissions = EnumSet.of(
+              OWNER_READ, OWNER_WRITE, OWNER_EXECUTE,
+              GROUP_READ, GROUP_WRITE, GROUP_EXECUTE,
+              OTHERS_READ, OTHERS_WRITE, OTHERS_EXECUTE);
+      Assert.assertTrue(permissions.containsAll(fullPermissions));
+
+      String underfsFolder = mTfs.createAndGetUserUnderfsTempFolder();
+      permissions = Files.getPosixFilePermissions(Paths.get(underfsFolder));
+      Assert.assertTrue(permissions.containsAll(fullPermissions));
+
   }
 }

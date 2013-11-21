@@ -16,22 +16,20 @@
  */
 package tachyon;
 
+import org.apache.curator.test.TestingServer;
+import org.apache.log4j.Logger;
+import tachyon.client.TachyonFS;
+import tachyon.conf.CommonConf;
+import tachyon.conf.MasterConf;
+import tachyon.conf.UserConf;
+import tachyon.conf.WorkerConf;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-
-import org.apache.curator.test.TestingServer;
-import org.apache.log4j.Logger;
-
-import tachyon.client.TachyonFS;
-import tachyon.conf.CommonConf;
-import tachyon.conf.MasterConf;
-import tachyon.conf.UserConf;
-import tachyon.conf.WorkerConf;
 
 /**
  * A local Tachyon cluster with Multiple masters
@@ -58,8 +56,10 @@ public class LocalTachyonClusterMultiMaster {
   private String mLocalhostName = null;
 
   private List<TachyonFS> mClients = new ArrayList<TachyonFS>();
+  private List<Integer> mMastersWebPorts =null;
+  private int mWorkerDataPort = TestUtils.getWorkerPort();
 
-  public LocalTachyonClusterMultiMaster(long workerCapacityBytes, int masters) {
+    public LocalTachyonClusterMultiMaster(long workerCapacityBytes, int masters) {
     this(TestUtils.getMasterPort(), TestUtils.getWorkerPort(),
         workerCapacityBytes, masters);
   }
@@ -68,8 +68,12 @@ public class LocalTachyonClusterMultiMaster {
       int masters) {
     mNumOfMasters = masters;
     mMastersPorts = new ArrayList<Integer>(masters);
+    mMastersWebPorts = new ArrayList<Integer>(masters);
+    mMastersPorts.add(masterPort);
     for (int k = 0; k < mNumOfMasters; k ++) {
-      mMastersPorts.add(masterPort + k * 10);
+      int port = TestUtils.getMasterPort();
+      mMastersPorts.add(port);
+      mMastersWebPorts.add(port + 1);
     }
     mWorkerPort = workerPort;
     mWorkerCapacityBytes = workerCapacityBytes;
@@ -185,7 +189,7 @@ public class LocalTachyonClusterMultiMaster {
     System.setProperty("tachyon.zookeeper.leader.path", "/leader");
     System.setProperty("tachyon.master.hostname", mLocalhostName);
     System.setProperty("tachyon.master.port", mMastersPorts.get(0) + "");
-    System.setProperty("tachyon.master.web.port", (mMastersPorts.get(0) + 1) + "");
+    System.setProperty("tachyon.master.web.port", mMastersWebPorts.get(0) + "");
     System.setProperty("tachyon.worker.port", mWorkerPort + "");
     System.setProperty("tachyon.worker.data.port", (mWorkerPort + 1) + "");
     System.setProperty("tachyon.worker.data.folder", mWorkerDataFolder);
@@ -203,7 +207,7 @@ public class LocalTachyonClusterMultiMaster {
     mMasterThreads = new ArrayList<MasterThread>();
     for (int k = 0; k < mNumOfMasters; k ++) {
       mMasters.add(new Master(new InetSocketAddress(mLocalhostName, mMastersPorts.get(k)),
-          mMastersPorts.get(k) + 1, 1, 1, 1));
+          mMastersWebPorts.get(k), 1, 1, 1));
       MasterThread thread = new MasterThread(mMasters.get(k));
       thread.start();
       mMasterThreads.add(thread);

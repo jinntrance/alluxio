@@ -16,44 +16,40 @@
  */
 package tachyon;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import com.google.common.collect.Maps;
 import tachyon.client.OutStream;
 import tachyon.client.TachyonFS;
 import tachyon.client.TachyonFile;
 import tachyon.client.WriteType;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
 public final class TestUtils {
 
-  private static List<Integer> masterPorts= Collections.synchronizedList(new ArrayList<Integer>());
-  private static List<Integer> workerPorts= Collections.synchronizedList(new ArrayList<Integer>());
+  private static Set<Integer> masterPorts= new CopyOnWriteArraySet<Integer>();
+  private static Set<Integer> workerPorts= new CopyOnWriteArraySet<Integer>();
 
   public static int getWorkerPort(){
-    int port = Constants.DEFAULT_WORKER_PORT - randomInt();
-    while (workerPorts.contains(port)) {
+   int port = 0;
+   do {
       port = Constants.DEFAULT_WORKER_PORT - randomInt();
-    }
-    workerPorts.add(port);
+    }  while (workerPorts.contains(port));
+   workerPorts.add(port);
     return port;
   }
 
   private static int randomInt() {
-    return new Random().nextInt(4000);
+    return new Random().nextInt(2000)*2;
   }
 
   public static int getMasterPort(){
-    int port = Constants.DEFAULT_MASTER_PORT - randomInt();
-    while (masterPorts.contains(port)) {
+    int port = 0;
+    do {
       port = Constants.DEFAULT_MASTER_PORT - randomInt();
-    }
+    } while (masterPorts.contains(port));
     masterPorts.add(port);
     return port;
   }
