@@ -16,12 +16,6 @@
  */
 package tachyon;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -32,6 +26,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.log4j.Logger;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * HDFS UnderFilesystem implementation.
@@ -321,5 +321,9 @@ public class UnderFileSystemHdfs extends UnderFileSystem {
     }
     CommonUtils.runtimeException(te);
     return false;
+  }
+
+  public FsPermission getPermission(String path) throws IOException {
+      return mFs.getFileStatus(new Path(path)).getPermission();
   }
 }

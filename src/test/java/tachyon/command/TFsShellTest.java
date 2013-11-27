@@ -16,21 +16,10 @@
  */
 package tachyon.command;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.InetAddress;
-import java.util.Iterator;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import tachyon.Constants;
 import tachyon.LocalTachyonCluster;
 import tachyon.TestUtils;
@@ -40,6 +29,16 @@ import tachyon.client.TachyonFS;
 import tachyon.client.TachyonFile;
 import tachyon.client.WriteType;
 import tachyon.thrift.ClientBlockInfo;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.InetAddress;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Unit tests on TFsShell.
@@ -58,7 +57,7 @@ public class TFsShellTest {
     if (command.length == 2) {
       if (cmd.equals("ls")) {
         // Not sure how to handle this one.
-        return null; 
+        return null;
       } else if (cmd.equals("mkdir")) {
         return "Successfully created directory " + command[1] + "\n";
       } else if (cmd.equals("rm")) {
@@ -75,16 +74,16 @@ public class TFsShellTest {
     } else if (command.length > 3) {
       if (cmd.equals("location")) {
         StringBuilder ret = new StringBuilder();
-        ret.append(command[1] + " with file id " + command[2] + " are on nodes: \n");
+        ret.append(command[1]).append(" with file id ").append(command[2]).append(" are on nodes: \n");
         for (int i = 3; i < command.length; i ++) {
-          ret.append(command[i] + "\n");
+          ret.append(command[i]).append("\n");
         }
         return ret.toString();
       }else if (cmd.equals("fileinfo")) {
         StringBuilder ret = new StringBuilder();
-        ret.append(command[1] + " with file id " + command[2] + " have following blocks: \n");
+        ret.append(command[1]).append(" with file id ").append(command[2]).append(" have following blocks: \n");
         for (int i = 3; i < command.length; i ++) {
-          ret.append(command[i] + "\n");
+          ret.append(command[i]).append("\n");
         }
         return ret.toString();
       }
@@ -115,7 +114,7 @@ public class TFsShellTest {
 
   @Test
   public void mkdirTest() throws IOException {
-    mFsShell.mkdir(new String[]{"mkdir", "tachyon://" + 
+    mFsShell.mkdir(new String[]{"mkdir", "tachyon://" +
         InetAddress.getLocalHost().getCanonicalHostName() + ":" +
         mLocalTachyonCluster.getMasterPort() + "/root/testFile1"});
     TachyonFile tFile = mTfs.getFile("/root/testFile1");
@@ -126,7 +125,7 @@ public class TFsShellTest {
   }
 
   @Test
-  public void mkdirShortPathTest() throws IOException { 
+  public void mkdirShortPathTest() throws IOException {
     mFsShell.mkdir(new String[]{"mkdir", "/root/testFile1"});
     TachyonFile tFile = mTfs.getFile("/root/testFile1");
     Assert.assertNotNull(tFile);
@@ -153,7 +152,7 @@ public class TFsShellTest {
 
   @Test(expected = IOException.class)
   public void mkdirInvalidPathTest() throws IOException {
-    mFsShell.mkdir(new String[]{"mkdir", "/test File Invalid Path"});  
+    mFsShell.mkdir(new String[]{"mkdir", "/test File Invalid Path"});
   }
 
   @Test
@@ -266,7 +265,7 @@ public class TFsShellTest {
     TestUtils.createByteFile(mTfs, "/testFile", WriteType.MUST_CACHE, 10);
     mFsShell.copyToLocal(new String[]{
         "copyToLocal", "/testFile", mLocalTachyonCluster.getTachyonHome() + "/testFile"});
-    Assert.assertEquals(getCommandOutput(new String[]{"copyToLocal", "/testFile", 
+    Assert.assertEquals(getCommandOutput(new String[]{"copyToLocal", "/testFile",
         mLocalTachyonCluster.getTachyonHome() + "/testFile"}), mOutput.toString());
     File testFile = new File(mLocalTachyonCluster.getTachyonHome() + "/testFile");
     FileInputStream fis = new FileInputStream(testFile);
@@ -281,7 +280,7 @@ public class TFsShellTest {
     TestUtils.createByteFile(mTfs, "/testFile", WriteType.MUST_CACHE, mSizeBytes);
     mFsShell.copyToLocal(new String[]{
         "copyToLocal", "/testFile", mLocalTachyonCluster.getTachyonHome() + "/testFile"});
-    Assert.assertEquals(getCommandOutput(new String[]{"copyToLocal", "/testFile", 
+    Assert.assertEquals(getCommandOutput(new String[]{"copyToLocal", "/testFile",
         mLocalTachyonCluster.getTachyonHome() + "/testFile"}), mOutput.toString());
     File testFile = new File(mLocalTachyonCluster.getTachyonHome() + "/testFile");
     FileInputStream fis = new FileInputStream(testFile);
@@ -290,7 +289,7 @@ public class TFsShellTest {
     fis.close();
     Assert.assertTrue(TestUtils.equalIncreasingByteArray(mSizeBytes, read));
   }
-  
+
   @Test
   public void fileinfoTest() throws IOException {
     int fileId = TestUtils.createByteFile(mTfs, "/testFile", WriteType.MUST_CACHE, 10);
@@ -309,7 +308,7 @@ public class TFsShellTest {
     }
     Assert.assertEquals(getCommandOutput(commandParameters), mOutput.toString());
   }
-  
+
   @Test
   public void locationTest() throws IOException {
     int fileId = TestUtils.createByteFile(mTfs, "/testFile", WriteType.MUST_CACHE, 10);

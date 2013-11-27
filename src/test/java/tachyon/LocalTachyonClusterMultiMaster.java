@@ -30,6 +30,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A local Tachyon cluster with Multiple masters
@@ -55,7 +56,7 @@ public class LocalTachyonClusterMultiMaster {
 
   private String mLocalhostName = null;
 
-  private List<TachyonFS> mClients = new ArrayList<TachyonFS>();
+  private List<TachyonFS> mClients = new CopyOnWriteArrayList<TachyonFS>();
   private List<Integer> mMastersWebPorts =null;
   private int mWorkerDataPort = TestUtils.getWorkerPort();
 

@@ -16,42 +16,26 @@
  */
 package tachyon;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Set;
-
+import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransportException;
-import org.apache.log4j.Logger;
-
 import tachyon.conf.CommonConf;
 import tachyon.conf.UserConf;
-import tachyon.thrift.BlockInfoException;
-import tachyon.thrift.ClientBlockInfo;
-import tachyon.thrift.ClientFileInfo;
-import tachyon.thrift.ClientRawTableInfo;
-import tachyon.thrift.ClientWorkerInfo;
-import tachyon.thrift.Command;
-import tachyon.thrift.FileAlreadyExistException;
-import tachyon.thrift.FileDoesNotExistException;
-import tachyon.thrift.InvalidPathException;
-import tachyon.thrift.MasterService;
-import tachyon.thrift.NetAddress;
-import tachyon.thrift.NoWorkerException;
-import tachyon.thrift.SuspectedFileSizeException;
-import tachyon.thrift.TableColumnException;
-import tachyon.thrift.TableDoesNotExistException;
-import tachyon.thrift.TachyonException;
+import tachyon.thrift.*;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The master server client side.
- * 
+ *
  * Since MasterService.Client is not thread safe, this class has to guarantee thread safe.
  */
 public class MasterClient {
@@ -106,10 +90,10 @@ public class MasterClient {
    * @return
    * @throws FileDoesNotExistException
    * @throws SuspectedFileSizeException
-   * @throws BlockInfoException 
+   * @throws BlockInfoException
    * @throws TException
    */
-  public synchronized boolean addCheckpoint(long workerId, int fileId, long length, 
+  public synchronized boolean addCheckpoint(long workerId, int fileId, long length,
       String checkpointPath)
           throws FileDoesNotExistException, SuspectedFileSizeException, BlockInfoException,
           TException {
@@ -155,7 +139,7 @@ public class MasterClient {
               UserConf.get().MASTER_CLIENT_TIMEOUT_MS / 2);
           mHeartbeatThread.start();
         } catch (TTransportException e) {
-          LOG.error("Failed to connect (" +tries + ") to master " + mMasterAddress + 
+          LOG.error("Failed to connect (" +tries + ") to master " + mMasterAddress +
               " : " + e.getMessage());
           CommonUtils.sleepMs(LOG, 1000);
           continue;
@@ -217,7 +201,7 @@ public class MasterClient {
     return null;
   }
 
-  public synchronized boolean isConnected() {
+  public boolean isConnected() {
     return mIsConnected;
   }
 
@@ -261,7 +245,7 @@ public class MasterClient {
     }
   }
 
-  public synchronized int user_createFile(String path, long blockSizeByte) 
+  public synchronized int user_createFile(String path, long blockSizeByte)
       throws IOException, TException {
     while (!mIsShutdown) {
       connect();
@@ -285,7 +269,7 @@ public class MasterClient {
       connect();
       try {
         return mClient.user_createFileOnCheckpoint(path, checkpointPath);
-      } catch (FileAlreadyExistException | InvalidPathException | SuspectedFileSizeException | 
+      } catch (FileAlreadyExistException | InvalidPathException | SuspectedFileSizeException |
           BlockInfoException | TachyonException e) {
         throw new IOException(e);
       } catch (TTransportException e) {
@@ -320,7 +304,7 @@ public class MasterClient {
       connect();
       try {
         return mClient.user_createRawTable(path, columns, metadata);
-      } catch (FileAlreadyExistException | InvalidPathException | TableColumnException | 
+      } catch (FileAlreadyExistException | InvalidPathException | TableColumnException |
           TachyonException e) {
         throw new IOException(e);
       } catch (TTransportException e) {
@@ -331,7 +315,7 @@ public class MasterClient {
     return -1;
   }
 
-  public synchronized boolean user_delete(String path, boolean recursive) 
+  public synchronized boolean user_delete(String path, boolean recursive)
       throws IOException, TException {
     while (!mIsShutdown) {
       connect();
@@ -379,7 +363,7 @@ public class MasterClient {
     return -1;
   }
 
-  public ClientBlockInfo user_getClientBlockInfo(long blockId) 
+  public ClientBlockInfo user_getClientBlockInfo(long blockId)
       throws FileDoesNotExistException, BlockInfoException, TException {
     while (!mIsShutdown) {
       connect();
@@ -455,7 +439,7 @@ public class MasterClient {
     return -1;
   }
 
-  public synchronized List<ClientBlockInfo> user_getFileBlocks(int id) 
+  public synchronized List<ClientBlockInfo> user_getFileBlocks(int id)
       throws IOException, TException {
     while (!mIsShutdown) {
       connect();
@@ -582,7 +566,7 @@ public class MasterClient {
     return null;
   }
 
-  public synchronized boolean user_mkdir(String path) 
+  public synchronized boolean user_mkdir(String path)
       throws IOException, TException {
     while (!mIsShutdown) {
       connect();
@@ -673,8 +657,8 @@ public class MasterClient {
     }
   }
 
-  public synchronized void worker_cacheBlock(long workerId, long workerUsedBytes, long blockId, 
-      long length) throws FileDoesNotExistException, SuspectedFileSizeException, BlockInfoException, 
+  public synchronized void worker_cacheBlock(long workerId, long workerUsedBytes, long blockId,
+      long length) throws FileDoesNotExistException, SuspectedFileSizeException, BlockInfoException,
       TException {
     while (!mIsShutdown) {
       connect();
@@ -730,8 +714,8 @@ public class MasterClient {
     while (!mIsShutdown) {
       connect();
       try {
-        long ret = 
-            mClient.worker_register(workerNetAddress, totalBytes, usedBytes, currentBlockList); 
+        long ret =
+            mClient.worker_register(workerNetAddress, totalBytes, usedBytes, currentBlockList);
         LOG.info("Registered at the master " + mMasterAddress + " from worker " + workerNetAddress +
             " , got WorkerId " + ret);
         return ret;

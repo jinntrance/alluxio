@@ -16,14 +16,14 @@
  */
 package tachyon;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import tachyon.thrift.ClientBlockInfo;
 import tachyon.thrift.NetAddress;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Block info on the master side.
@@ -36,7 +36,7 @@ public class BlockInfo {
   public final long OFFSET;
   public final long LENGTH;
 
-  private Map<Long, NetAddress> mLocations = new HashMap<Long, NetAddress>(5);
+  private Map<Long, NetAddress> mLocations = new ConcurrentHashMap<Long, NetAddress>(5);
 
   /**
    * @param inodeFile
@@ -51,15 +51,15 @@ public class BlockInfo {
     LENGTH = length;
   }
 
-  public synchronized void addLocation(long workerId, NetAddress workerAddress) {
+  public void addLocation(long workerId, NetAddress workerAddress) {
     mLocations.put(workerId, workerAddress);
   }
 
-  public synchronized InodeFile getInodeFile() {
+  public InodeFile getInodeFile() {
     return INODE_FILE;
   }
 
-  public synchronized List<NetAddress> getLocations() {
+  public List<NetAddress> getLocations() {
     List<NetAddress> ret = new ArrayList<NetAddress>(mLocations.size());
     ret.addAll(mLocations.values());
     if (ret.isEmpty() && INODE_FILE.hasCheckpointed()) {
@@ -79,7 +79,7 @@ public class BlockInfo {
     return ret;
   }
 
-  public synchronized ClientBlockInfo generateClientBlockInfo() {
+  public ClientBlockInfo generateClientBlockInfo() {
     ClientBlockInfo ret = new ClientBlockInfo();
 
     ret.blockId = BLOCK_ID;
@@ -90,7 +90,7 @@ public class BlockInfo {
     return ret;
   }
 
-  public synchronized List<Pair<Long, Long>> getBlockIdWorkerIdPairs() {
+  public List<Pair<Long, Long>> getBlockIdWorkerIdPairs() {
     List<Pair<Long, Long>> ret = new ArrayList<Pair<Long, Long>>(mLocations.size());
     for (long workerId: mLocations.keySet()) {
       ret.add(new Pair<Long, Long>(BLOCK_ID, workerId));
@@ -98,15 +98,15 @@ public class BlockInfo {
     return ret;
   }
 
-  public synchronized boolean isInMemory() {
+  public boolean isInMemory() {
     return mLocations.size() > 0;
   }
 
-  public synchronized void removeLocation(long workerId) {
+  public void removeLocation(long workerId) {
     mLocations.remove(workerId);
   }
 
-  public synchronized String toString() {
+  public String toString() {
     StringBuilder sb = new StringBuilder("BlockInfo(BLOCK_INDEX: ");
     sb.append(BLOCK_INDEX);
     sb.append(", BLOCK_ID: ").append(BLOCK_ID);

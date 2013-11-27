@@ -24,8 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Single node UnderFilesystem implementation.
@@ -170,5 +174,9 @@ public class UnderFileSystemSingleLocal extends UnderFileSystem {
   public boolean rename(String src, String dst) throws IOException {
     File file = new File(src);
     return file.renameTo(new File(dst));
+  }
+
+  public Set<PosixFilePermission> getPermission(String path) throws IOException {
+    return Files.getPosixFilePermissions(Paths.get(path));
   }
 }

@@ -16,16 +16,23 @@
  */
 package tachyon.client;
 
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import tachyon.*;
+import tachyon.CommonUtils;
+import tachyon.Constants;
+import tachyon.LocalTachyonCluster;
+import tachyon.TestUtils;
+import tachyon.UnderFileSystem;
+import tachyon.UnderFileSystemHdfs;
 import tachyon.client.table.RawTable;
 import tachyon.thrift.ClientWorkerInfo;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,8 +43,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.nio.file.attribute.PosixFilePermission.*;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+
 
 /**
  * Unit tests on TachyonClient.
@@ -439,18 +445,23 @@ public class TachyonFSTest {
   }
 
   @Test
-  public void createAndGetUserTempFolderTest() throws IOException {
-      String userFolder=mTfs.createAndGetUserTempFolder().getAbsolutePath();
-      Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(Paths.get(userFolder));
-      Set<PosixFilePermission> fullPermissions = EnumSet.of(
-              OWNER_READ, OWNER_WRITE, OWNER_EXECUTE,
-              GROUP_READ, GROUP_WRITE, GROUP_EXECUTE,
-              OTHERS_READ, OTHERS_WRITE, OTHERS_EXECUTE);
-      Assert.assertTrue(permissions.containsAll(fullPermissions));
-
-      String underfsFolder = mTfs.createAndGetUserUnderfsTempFolder();
+  public void createAndGetUserTempFolderTest() throws IOException, URISyntaxException {
+    String userFolder = mTfs.createAndGetUserTempFolder().getAbsolutePath();
+    Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(Paths.get(userFolder));
+    Set<PosixFilePermission> fullPermissions = EnumSet.of(
+            OWNER_READ, OWNER_WRITE, OWNER_EXECUTE,
+            GROUP_READ, GROUP_WRITE, GROUP_EXECUTE,
+            OTHERS_READ, OTHERS_WRITE, OTHERS_EXECUTE);
+    Assert.assertTrue(permissions.containsAll(fullPermissions));
+    String underfsFolder = mTfs.createAndGetUserUnderfsTempFolder();
+    if (underfsFolder.startsWith("hdfs://") || underfsFolder.startsWith("file://") ||
+            underfsFolder.startsWith("s3://") || underfsFolder.startsWith("s3n://")) {
+      FsPermission pms = UnderFileSystemHdfs.getClient(underfsFolder).getPermission(underfsFolder);
+      Assert.assertTrue(pms.toShort() == 0777);
+    } else if (underfsFolder.startsWith("/")) {
       permissions = Files.getPosixFilePermissions(Paths.get(underfsFolder));
       Assert.assertTrue(permissions.containsAll(fullPermissions));
+    }
 
   }
 }

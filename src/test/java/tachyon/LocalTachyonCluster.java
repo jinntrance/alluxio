@@ -16,19 +16,18 @@
  */
 package tachyon;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import tachyon.client.TachyonFS;
 import tachyon.conf.CommonConf;
 import tachyon.conf.MasterConf;
 import tachyon.conf.UserConf;
 import tachyon.conf.WorkerConf;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Local Tachyon cluster for unit tests.
@@ -49,7 +48,7 @@ public class LocalTachyonCluster {
 
   private String mLocalhostName = null;
 
-  private List<TachyonFS> mClients = new ArrayList<TachyonFS>();
+  private List<TachyonFS> mClients = new CopyOnWriteArrayList<TachyonFS>();
 
   public LocalTachyonCluster(long workerCapacityBytes) {
     mMasterPort = TestUtils.getMasterPort();
@@ -63,9 +62,10 @@ public class LocalTachyonCluster {
     mWorkerCapacityBytes = workerCapacityBytes;
   }
 
-  public synchronized TachyonFS getClient() {
-    mClients.add(TachyonFS.get(mLocalhostName + ":" + mMasterPort));
-    return mClients.get(mClients.size() - 1);
+  public TachyonFS getClient() {
+    TachyonFS client = TachyonFS.get(mLocalhostName + ":" + mMasterPort);
+    mClients.add(client);
+    return client;
   }
 
   public int getMasterPort() {

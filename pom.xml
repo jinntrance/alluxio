@@ -251,8 +251,13 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.16</version>
         <configuration>
-            <forkCount>2C</forkCount>
-            <reuseForks>true</reuseForks>
+            <parallel>classes</parallel>
+            <!--<useUnlimitedThreads>true</useUnlimitedThreads>-->
+            <threadCount>3</threadCount>
+            <!--<threadCountClasses>20</threadCountClasses>-->
+            <!--<threadCountMethods>2</threadCountMethods>-->
+            <!--<threadCountSuites>2</threadCountSuites>-->
+            <!--<forkCount>3C</forkCount>-->
             <systemPropertyVariables>
             <log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
           </systemPropertyVariables>

@@ -16,10 +16,11 @@
  */
 package tachyon;
 
-import java.io.InputStream;
-import java.io.IOException;
-import java.util.Properties;
 import org.apache.log4j.Logger;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * The version of the current build.
@@ -39,7 +40,9 @@ public class Version {
       LOG.error(e.getMessage(), e);
     } finally {
       try {
-        in.close();
+        if (in != null) {
+          in.close();
+        }
       } catch (Exception e){
         LOG.error(e.getMessage(), e);
       }

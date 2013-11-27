@@ -16,14 +16,15 @@
  */
 package tachyon;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import tachyon.thrift.BlockInfoException;
 import tachyon.thrift.ClientBlockInfo;
 import tachyon.thrift.ClientFileInfo;
 import tachyon.thrift.NetAddress;
 import tachyon.thrift.SuspectedFileSizeException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Tachyon file system's file representation in master.
@@ -36,7 +37,7 @@ public class InodeFile extends Inode {
   private boolean mPin = false;
   private boolean mCache = false;
   private String mCheckpointPath = "";
-  private List<BlockInfo> mBlocks = new ArrayList<BlockInfo>(3);
+  private List<BlockInfo> mBlocks = new CopyOnWriteArrayList<BlockInfo>();
 
   public InodeFile(String name, int id, int parentId, long blockSizeByte, long creationTimeMs) {
     super(name, id, parentId, InodeType.File, creationTimeMs);
@@ -47,7 +48,7 @@ public class InodeFile extends Inode {
     return mLength;
   }
 
-  public synchronized void setLength(long length) 
+  public synchronized void setLength(long length)
       throws SuspectedFileSizeException, BlockInfoException {
     if (isComplete()) {
       throw new SuspectedFileSizeException("InodeFile length was set previously.");
@@ -124,7 +125,7 @@ public class InodeFile extends Inode {
     mBlocks.add(blockInfo);
   }
 
-  public synchronized void addLocation(int blockIndex, long workerId, NetAddress workerAddress) 
+  public synchronized void addLocation(int blockIndex, long workerId, NetAddress workerAddress)
       throws BlockInfoException {
     if (blockIndex < 0 || blockIndex >= mBlocks.size()) {
       throw new BlockInfoException("BlockIndex " + blockIndex + " out of bounds." + toString());
