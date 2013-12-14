@@ -18,7 +18,11 @@ package tachyon;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +45,7 @@ import tachyon.thrift.FailedToCheckpointException;
 import tachyon.thrift.FileDoesNotExistException;
 import tachyon.thrift.NetAddress;
 import tachyon.thrift.SuspectedFileSizeException;
+import tachyon.util.CommonUtils;
 
 /**
  * The structure to store a worker's information in worker node.
@@ -63,19 +68,20 @@ public class WorkerStorage {
   private Map<Long, Set<Long>> mUsersPerLockedBlock = new HashMap<Long, Set<Long>>();
   private Map<Long, Set<Long>> mLockedBlocksPerUser = new HashMap<Long, Set<Long>>();
 
-  private BlockingQueue<Long> mRemovedBlockList = 
+  private BlockingQueue<Long> mRemovedBlockList =
       new ArrayBlockingQueue<Long>(Constants.WORKER_FILES_QUEUE_SIZE);
-  private BlockingQueue<Long> mAddedBlockList = 
+  private BlockingQueue<Long> mAddedBlockList =
       new ArrayBlockingQueue<Long>(Constants.WORKER_FILES_QUEUE_SIZE);
 
   private File mLocalDataFolder;
   private File mLocalUserFolder;
   private String mUnderfsWorkerFolder;
+  private String mUnderfsOrphansFolder;
   private UnderFileSystem mUnderFs;
 
   private Users mUsers;
 
-  public WorkerStorage(InetSocketAddress masterAddress, InetSocketAddress workerAddress, 
+  public WorkerStorage(InetSocketAddress masterAddress, InetSocketAddress workerAddress,
       String dataFolder, long memoryCapacityBytes) {
     COMMON_CONF = CommonConf.get();
 
@@ -111,6 +117,8 @@ public class WorkerStorage {
 
     try {
       initializeWorkerStorage();
+    } catch (IOException e) {
+      CommonUtils.runtimeException(e);
     } catch (FileDoesNotExistException e) {
       CommonUtils.runtimeException(e);
     } catch (SuspectedFileSizeException e) {
@@ -119,7 +127,7 @@ public class WorkerStorage {
       CommonUtils.runtimeException(e);
     } catch (TException e) {
       CommonUtils.runtimeException(e);
-    } 
+    }
 
     LOG.info("Current Worker Info: ID " + mWorkerId + ", ADDRESS: " + mWorkerAddress +
         ", MemoryCapacityBytes: " + mWorkerSpaceCounter.getCapacityBytes());
@@ -132,7 +140,7 @@ public class WorkerStorage {
   }
 
   public void addCheckpoint(long userId, int fileId)
-      throws FileDoesNotExistException, SuspectedFileSizeException, 
+      throws FileDoesNotExistException, SuspectedFileSizeException,
       FailedToCheckpointException, BlockInfoException, TException {
     // TODO This part need to be changed.
     String srcPath = getUserUnderfsTempFolder(userId) + "/" + fileId;
@@ -171,7 +179,7 @@ public class WorkerStorage {
       throws FileDoesNotExistException, SuspectedFileSizeException, BlockInfoException, TException {
     File srcFile = new File(getUserTempFolder(userId) + "/" + blockId);
     File dstFile = new File(mLocalDataFolder + "/" + blockId);
-    long fileSizeBytes = srcFile.length(); 
+    long fileSizeBytes = srcFile.length();
     if (!srcFile.exists()) {
       throw new FileDoesNotExistException("File " + srcFile + " does not exist.");
     }
@@ -181,7 +189,7 @@ public class WorkerStorage {
     }
     addBlockId(blockId, fileSizeBytes);
     mUsers.addOwnBytes(userId, - fileSizeBytes);
-    mMasterClient.worker_cacheBlock(mWorkerId, 
+    mMasterClient.worker_cacheBlock(mWorkerId,
         mWorkerSpaceCounter.getUsedBytes(), blockId, fileSizeBytes);
     LOG.info(userId + " " + dstFile);
   }
@@ -247,6 +255,28 @@ public class WorkerStorage {
     }
   }
 
+  /**
+   * Swap out those blocks missing INode information onto underFS which can be
+   * retrieved by user later. Its cleanup only happens while formating the TFS.
+   */
+  private void swapoutOrphanBlocks(long blockId, File file) throws IOException {
+    RandomAccessFile localFile = new RandomAccessFile(file, "r");
+    ByteBuffer buf = localFile.getChannel().map(MapMode.READ_ONLY, 0, file.length());
+
+    String ufsOrphanBlock = mUnderfsOrphansFolder + Constants.PATH_SEPARATOR + blockId;
+    OutputStream os = mUnderFs.create(ufsOrphanBlock);
+    int BULKSIZE = 1024 * 64;
+    byte[] bulk = new byte[BULKSIZE];
+    for (int k = 0; k < (buf.limit() + BULKSIZE - 1) / BULKSIZE; k++) {
+      int len = BULKSIZE < buf.remaining() ? BULKSIZE : buf.remaining();
+      buf.get(bulk, buf.position(), len);
+      os.write(bulk, 0, len);
+    }
+    os.close();
+
+    localFile.close();
+  }
+
   public String getDataFolder() throws TException {
     return mLocalDataFolder.toString();
   }
@@ -272,8 +302,8 @@ public class WorkerStorage {
         sendRemovedPartitionList);
   }
 
-  private void initializeWorkerStorage() 
-      throws FileDoesNotExistException, SuspectedFileSizeException, BlockInfoException, TException {
+  private void initializeWorkerStorage() throws IOException, FileDoesNotExistException,
+  SuspectedFileSizeException, BlockInfoException, TException {
     LOG.info("Initializing the worker storage.");
     if (!mLocalDataFolder.exists()) {
       LOG.info("Local folder " + mLocalDataFolder + " does not exist. Creating a new one.");
@@ -297,6 +327,11 @@ public class WorkerStorage {
     }
     mLocalUserFolder.mkdir();
 
+    mUnderfsOrphansFolder = mUnderfsWorkerFolder + "/orphans";
+    if (!mUnderFs.exists(mUnderfsOrphansFolder)) {
+      mUnderFs.mkdirs(mUnderfsOrphansFolder, true);
+    }
+
     int cnt = 0;
     for (File tFile : mLocalDataFolder.listFiles()) {
       if (tFile.isFile()) {
@@ -305,7 +340,15 @@ public class WorkerStorage {
 
         long blockId = CommonUtils.getBlockIdFromFileName(tFile.getName());
         boolean success = mWorkerSpaceCounter.requestSpaceBytes(tFile.length());
-        addFoundBlock(blockId, tFile.length());
+        try {
+          addFoundBlock(blockId, tFile.length());
+        } catch (FileDoesNotExistException e) {
+          LOG.error("BlockId: " + blockId + " becomes orphan for: \"" + e.message + "\"");
+          LOG.info("Swapout File " + cnt + ": blockId: " + blockId + " to " + mUnderfsOrphansFolder);
+          swapoutOrphanBlocks(blockId, tFile);
+          freeBlock(blockId);
+          continue;
+        }
         mAddedBlockList.add(blockId);
         if (!success) {
           CommonUtils.runtimeException("Pre-existing files exceed the local memory capacity.");
@@ -349,7 +392,7 @@ public class WorkerStorage {
           long blockId = -1;
           long latestTimeMs = Long.MAX_VALUE;
           for (Entry<Long, Long> entry : mLatestBlockAccessTimeMs.entrySet()) {
-            if (entry.getValue() < latestTimeMs 
+            if (entry.getValue() < latestTimeMs
                 && !pinList.contains(BlockInfo.computeInodeId(entry.getKey()))) {
               if(!mUsersPerLockedBlock.containsKey(entry.getKey())) {
                 blockId = entry.getKey();

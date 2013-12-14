@@ -14,11 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tachyon;
-
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.log4j.Logger;
-import tachyon.thrift.InvalidPathException;
+package tachyon.util;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -36,15 +32,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
-import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.log4j.Logger;
+
+import tachyon.Constants;
+import tachyon.thrift.InvalidPathException;
+
+import static java.nio.file.attribute.PosixFilePermission.*;
 
 /**
  * Common utilities shared by all components in Tachyon.
@@ -201,19 +195,21 @@ public final class CommonUtils {
 
   public static long parseMemorySize(String memorySize) {
     double alpha = 0.0001;
+    String ori = memorySize;
     String end = "";
     int tIndex = memorySize.length() - 1;
     while (tIndex >= 0) {
-      char ch = memorySize.charAt(tIndex);
-      if (Character.isLetter(ch)) {
-        end = ch + end;
+      if (memorySize.charAt(tIndex) > '9' || memorySize.charAt(tIndex) < '0') {
+        end = memorySize.charAt(tIndex) + end;
       } else {
         break;
       }
       tIndex --;
     }
-    double ret = Double.parseDouble(memorySize.substring(0, tIndex + 1));
-    switch (end.toLowerCase()) {
+    memorySize = memorySize.substring(0, tIndex + 1);
+    double ret = Double.parseDouble(memorySize);
+    end = end.toLowerCase();
+    switch (end) {
     case "":
     case "b":
       return (long) (ret + alpha);
@@ -226,7 +222,7 @@ public final class CommonUtils {
     case "tb":
       return (long) (ret * Constants.TB + alpha);
     }
-    runtimeException("Fail to parse " + memorySize + " as memory size");
+    runtimeException("Fail to parse " + ori + " as memory size");
     return -1;
   }
 

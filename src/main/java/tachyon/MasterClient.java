@@ -16,22 +16,39 @@
  */
 package tachyon;
 
-import org.apache.log4j.Logger;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransportException;
+import org.apache.log4j.Logger;
+
 import tachyon.conf.CommonConf;
 import tachyon.conf.UserConf;
-import tachyon.thrift.*;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Set;
+import tachyon.thrift.BlockInfoException;
+import tachyon.thrift.ClientBlockInfo;
+import tachyon.thrift.ClientFileInfo;
+import tachyon.thrift.ClientRawTableInfo;
+import tachyon.thrift.ClientWorkerInfo;
+import tachyon.thrift.Command;
+import tachyon.thrift.FileAlreadyExistException;
+import tachyon.thrift.FileDoesNotExistException;
+import tachyon.thrift.InvalidPathException;
+import tachyon.thrift.MasterService;
+import tachyon.thrift.NetAddress;
+import tachyon.thrift.NoWorkerException;
+import tachyon.thrift.SuspectedFileSizeException;
+import tachyon.thrift.TableColumnException;
+import tachyon.thrift.TableDoesNotExistException;
+import tachyon.thrift.TachyonException;
+import tachyon.util.CommonUtils;
 
 /**
  * The master server client side.
@@ -201,7 +218,7 @@ public class MasterClient {
     return null;
   }
 
-  public boolean isConnected() {
+  public synchronized boolean isConnected() {
     return mIsConnected;
   }
 

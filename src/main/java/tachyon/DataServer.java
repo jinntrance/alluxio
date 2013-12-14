@@ -16,8 +16,6 @@
  */
 package tachyon;
 
-import org.apache.log4j.Logger;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -25,9 +23,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.log4j.Logger;
+import tachyon.util.CommonUtils;
 
 /**
  * The Server to serve data file read request from remote machines. The current implementation
@@ -46,9 +49,9 @@ public class DataServer implements Runnable {
   private Selector mSelector;
 
   private Map<SocketChannel, DataServerMessage> mSendingData =
-      new ConcurrentHashMap<SocketChannel, DataServerMessage>();
+      Collections.synchronizedMap(new HashMap<SocketChannel, DataServerMessage>());
   private Map<SocketChannel, DataServerMessage> mReceivingData =
-      new ConcurrentHashMap<SocketChannel, DataServerMessage>();
+      Collections.synchronizedMap(new HashMap<SocketChannel, DataServerMessage>());
 
   // The blocks locker manager.
   private final BlocksLocker mBlocksLocker;

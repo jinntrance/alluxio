@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import tachyon.util.CommonUtils;
+
 /**
  * Single node UnderFilesystem implementation.
  *
@@ -135,6 +137,12 @@ public class UnderFileSystemSingleLocal extends UnderFileSystem {
       throw new FileNotFoundException(path);
     }
     return Constants.GB * 2L;
+  }
+
+  @Override
+  public long getModificationTimeMs(String path) throws IOException {
+    File file = new File(path);
+    return file.lastModified();
   }
 
   @Override

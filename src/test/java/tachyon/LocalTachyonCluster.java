@@ -21,6 +21,7 @@ import tachyon.conf.CommonConf;
 import tachyon.conf.MasterConf;
 import tachyon.conf.UserConf;
 import tachyon.conf.WorkerConf;
+import tachyon.util.CommonUtils;
 
 import java.io.File;
 import java.io.IOException;

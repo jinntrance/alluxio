@@ -16,20 +16,6 @@
  */
 package tachyon.client;
 
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import tachyon.CommonUtils;
-import tachyon.Constants;
-import tachyon.LocalTachyonCluster;
-import tachyon.TestUtils;
-import tachyon.UnderFileSystem;
-import tachyon.UnderFileSystemHdfs;
-import tachyon.client.table.RawTable;
-import tachyon.thrift.ClientWorkerInfo;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
@@ -41,6 +27,21 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import tachyon.Constants;
+import tachyon.LocalTachyonCluster;
+import tachyon.TestUtils;
+import tachyon.UnderFileSystem;
+import tachyon.UnderFileSystemHdfs;
+import tachyon.client.table.RawTable;
+import tachyon.thrift.ClientWorkerInfo;
+import tachyon.util.CommonUtils;
 
 import static java.nio.file.attribute.PosixFilePermission.*;
 

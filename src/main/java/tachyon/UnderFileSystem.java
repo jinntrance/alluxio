@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
+import tachyon.util.CommonUtils;
+
 /**
  * Tachyon stores data into an under layer file system. Any file system implementing
  * this interface can be a valid under layer file system
@@ -80,6 +82,8 @@ public abstract class UnderFileSystem {
   public abstract long getFileSize(String path) throws IOException;
 
   public abstract long getBlockSizeByte(String path) throws IOException;
+
+  public abstract long getModificationTimeMs(String path) throws IOException;
 
   public abstract long getSpace(String path, SpaceType type) throws IOException;
 

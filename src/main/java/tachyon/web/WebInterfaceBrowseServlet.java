@@ -16,9 +16,19 @@
  */
 package tachyon.web;
 
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
-import tachyon.CommonUtils;
+
 import tachyon.Constants;
 import tachyon.MasterInfo;
 import tachyon.client.InStream;
@@ -29,16 +39,7 @@ import tachyon.thrift.ClientFileInfo;
 import tachyon.thrift.FileDoesNotExistException;
 import tachyon.thrift.InvalidPathException;
 import tachyon.thrift.NetAddress;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import tachyon.util.CommonUtils;
 
 /**
  * Servlet that provides data for browsing the file system.
@@ -128,7 +129,7 @@ public class WebInterfaceBrowseServlet extends HttpServlet {
 
     public void setFileLocations(List<NetAddress> fileLocations) {
       for (NetAddress addr : fileLocations) {
-        mFileLocations.add(addr.getMHost() + ":" + addr.getMPort());
+        mFileLocations.add(new String(addr.getMHost() + ":" + addr.getMPort()));
       }
     }
 

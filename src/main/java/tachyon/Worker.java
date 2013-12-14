@@ -31,6 +31,7 @@ import tachyon.conf.WorkerConf;
 import tachyon.thrift.BlockInfoException;
 import tachyon.thrift.Command;
 import tachyon.thrift.WorkerService;
+import tachyon.util.CommonUtils;
 
 /**
  * Entry point for a worker daemon.

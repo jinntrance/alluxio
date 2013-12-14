@@ -16,6 +16,12 @@
  */
 package tachyon;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -27,11 +33,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.log4j.Logger;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import tachyon.util.CommonUtils;
 
 /**
  * HDFS UnderFilesystem implementation.
@@ -55,7 +57,8 @@ public class UnderFileSystemHdfs extends UnderFileSystem {
       mUfsPrefix = fsDefaultName;
       Configuration tConf = new Configuration();
       tConf.set("fs.defaultFS", fsDefaultName);
-      tConf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
+      tConf.set("fs.hdfs.impl", System.getProperty("tachyon.underfs.hdfs.impl",
+          "org.apache.hadoop.hdfs.DistributedFileSystem"));
       if (System.getProperty("fs.s3n.awsAccessKeyId") != null) {
         tConf.set("fs.s3n.awsAccessKeyId", System.getProperty("fs.s3n.awsAccessKeyId"));
       }
@@ -233,6 +236,16 @@ public class UnderFileSystemHdfs extends UnderFileSystem {
     }
     FileStatus fs = mFs.getFileStatus(tPath);
     return fs.getBlockSize();
+  }
+
+  @Override
+  public long getModificationTimeMs(String path) throws IOException {
+    Path tPath = new Path(path);
+    if (!mFs.exists(tPath)) {
+      throw new FileNotFoundException(path);
+    }
+    FileStatus fs = mFs.getFileStatus(tPath);
+    return fs.getModificationTime();
   }
 
   @Override
