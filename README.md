@@ -1,17 +1,17 @@
 Tachyon
 =======
 
-The master branch is in version 0.4.0-SNAPSHOT:
+The master branch is in version 0.6.0-SNAPSHOT:
 
-Project Homepage: http://www.tachyonproject.org
+- [Project Homepage](http://www.tachyonproject.org)
+- [Previous Releases](https://github.com/amplab/tachyon/tags)
+- [Master Branch Document](http://tachyon-project.org/master/)
+- [Tachyon Issue Tracker](https://tachyon.atlassian.net/browse/TACHYON)
+- [User Mailing List](https://groups.google.com/forum/?fromgroups#!forum/tachyon-users)
+- [Meetup Group](http://www.meetup.com/Tachyon)
+- [How to Contribute](http://tachyon-project.org/master/Startup-Tasks-for-New-Contributors.html) and
+[Beginner's Tasks](https://tachyon.atlassian.net/issues/?jql=project%20%3D%20TACHYON%20AND%20labels%20%3D%20Beginner)
 
-Previous Releases: https://github.com/amplab/tachyon/tags
-
-Documentation: https://github.com/amplab/tachyon/wiki
-
-JIRA: https://spark-project.atlassian.net/browse/TACHYON
-
-User Mailing List: https://groups.google.com/forum/?fromgroups#!forum/tachyon-users
 
 ## Dependency Information
 
@@ -19,19 +19,19 @@ User Mailing List: https://groups.google.com/forum/?fromgroups#!forum/tachyon-us
 ```xml
 <dependency>
   <groupId>org.tachyonproject</groupId>
-  <artifactId>tachyon</artifactId>
-  <version>0.3.0</version>
+  <artifactId>tachyon-client</artifactId>
+  <version>0.5.0</version>
 </dependency>
 ```
 
 ### Apache Ant
 ```xml
-<dependency org="org.tachyonproject" name="tachyon" rev="0.3.0">
-  <artifact name="tachyon" type="jar" />
+<dependency org="org.tachyonproject" name="tachyon" rev="0.5.0">
+  <artifact name="tachyon-client" type="jar" />
 </dependency>
 ```
 
 ### SBT
 ```
-libraryDependencies += "org.tachyonproject" % "tachyon" % "0.3.0"
+libraryDependencies += "org.tachyonproject" % "tachyon-client" % "0.5.0"
 ```

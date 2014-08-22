@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-usage="Usage: tachyon-stop.sh"
+Usage="Usage: tachyon-stop.sh"
 
 if [ "$#" -ne 0 ]; then
   echo $Usage
@@ -26,7 +26,7 @@ fi
 
 bin=`cd "$( dirname "$0" )"; pwd`
 
-$bin/tachyon killAll tachyon.Master
-$bin/tachyon killAll tachyon.Worker
+$bin/tachyon killAll tachyon.master.TachyonMaster
+$bin/tachyon killAll tachyon.worker.TachyonWorker
 
-$bin/tachyon-slaves.sh $bin/tachyon killAll tachyon.Worker
+$bin/tachyon-slaves.sh $bin/tachyon killAll tachyon.worker.TachyonWorker

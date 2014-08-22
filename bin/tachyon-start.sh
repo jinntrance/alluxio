@@ -70,12 +70,15 @@ check_mount_mode() {
 
 # pass mode as $1
 do_mount() {
+  MOUNT_FAILED=0
   case "${1}" in
     Mount)
       $bin/tachyon-mount.sh $1
+      MOUNT_FAILED=$?
       ;;
     SudoMount)
       $bin/tachyon-mount.sh $1
+      MOUNT_FAILED=$?
       ;;
     NoMount)
       ;;
@@ -97,36 +100,45 @@ start_master() {
     MASTER_ADDRESS=localhost
   fi
 
+  if [[ -z $TACHYON_MASTER_JAVA_OPTS ]] ; then
+    TACHYON_MASTER_JAVA_OPTS=$TACHYON_JAVA_OPTS
+  fi
+
   echo "Starting master @ $MASTER_ADDRESS"
-  (nohup $JAVA -cp $TACHYON_JAR -Dtachyon.home=$TACHYON_HOME -Dtachyon.logger.type="MASTER_LOGGER" -Dlog4j.configuration=file:$TACHYON_CONF_DIR/log4j.properties $TACHYON_JAVA_OPTS tachyon.Master > /dev/null 2>&1) &
+  (nohup $JAVA -cp $CLASSPATH -Dtachyon.home=$TACHYON_HOME -Dtachyon.logger.type="MASTER_LOGGER" -Dlog4j.configuration=file:$TACHYON_CONF_DIR/log4j.properties $TACHYON_MASTER_JAVA_OPTS tachyon.master.TachyonMaster > $TACHYON_LOGS_DIR/master.out 2>&1) &
 }
 
 start_worker() {
   do_mount $1
-  echo "Starting worker @ `hostname`"
-  (nohup $JAVA -cp $TACHYON_JAR -Dtachyon.home=$TACHYON_HOME -Dtachyon.logger.type="WORKER_LOGGER" -Dlog4j.configuration=file:$TACHYON_CONF_DIR/log4j.properties $TACHYON_JAVA_OPTS tachyon.Worker `hostname` > /dev/null 2>&1 ) &
+  if  [ $MOUNT_FAILED -ne 0 ] ; then
+    echo "Mount failed, not starting worker"
+    exit 1
+  fi
+
+  if [[ -z $TACHYON_WORKER_JAVA_OPTS ]] ; then
+    TACHYON_WORKER_JAVA_OPTS=$TACHYON_JAVA_OPTS
+  fi
+
+  echo "Starting worker @ `hostname -f`"
+  (nohup $JAVA -cp $CLASSPATH -Dtachyon.home=$TACHYON_HOME -Dtachyon.logger.type="WORKER_LOGGER" -Dlog4j.configuration=file:$TACHYON_CONF_DIR/log4j.properties $TACHYON_WORKER_JAVA_OPTS tachyon.worker.TachyonWorker `hostname -f` > $TACHYON_LOGS_DIR/worker.out 2>&1 ) &
 }
 
 restart_worker() {
-  RUN=`ps -ef | grep "tachyon.Worker" | grep "java" | wc | cut -d" " -f7`
-  if [[ $RUN -eq 0 ]] ; then
-    echo "Restarting worker @ `hostname`"
-    (nohup $JAVA -cp $TACHYON_JAR -Dtachyon.home=$TACHYON_HOME -Dtachyon.is.system=true -Dtachyon.logger.type="WORKER_LOGGER" $TACHYON_JAVA_OPTS tachyon.Worker `hostname` > /dev/null 2>&1) &
+  if [[ -z $TACHYON_WORKER_JAVA_OPTS ]] ; then
+    TACHYON_WORKER_JAVA_OPTS=$TACHYON_JAVA_OPTS
   fi
-}
 
-run_on_slaves() {
-  HOSTLIST=$TACHYON_CONF_DIR/slaves
-  for slave in `cat "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
-    ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no $slave $"${@// /\\ }" 2>&1 | sed "s/^/$slave: /" &
-    sleep 0.02
-  done
+  RUN=`ps -ef | grep "tachyon.worker.TachyonWorker" | grep "java" | wc | cut -d" " -f7`
+  if [[ $RUN -eq 0 ]] ; then
+    echo "Restarting worker @ `hostname -f`"
+    (nohup $JAVA -cp $CLASSPATH -Dtachyon.home=$TACHYON_HOME -Dtachyon.logger.type="WORKER_LOGGER" -Dlog4j.configuration=file:$TACHYON_CONF_DIR/log4j.properties $TACHYON_WORKER_JAVA_OPTS tachyon.worker.TachyonWorker `hostname -f` > $TACHYON_LOGS_DIR/worker.out 2>&1) &
+  fi
 }
 
 run_safe() {
   while [ 1 ]
   do
-    RUN=`ps -ef | grep "tachyon.Master" | grep "java" | wc | cut -d" " -f7`
+    RUN=`ps -ef | grep "tachyon.master.TachyonMaster" | grep "java" | wc | cut -d" " -f7`
     if [[ $RUN -eq 0 ]] ; then
       echo "Restarting the system master..."
       start_master
@@ -171,12 +183,17 @@ case "${WHAT}" in
     stop $bin
     start_master
     sleep 2
-    run_on_slaves $bin/tachyon-start.sh worker $2
+    $bin/tachyon-slaves.sh $bin/tachyon-start.sh worker $2
     ;;
   local)
     stop $bin
     sleep 1
     $bin/tachyon-mount.sh SudoMount
+    stat=$?
+    if [ $stat -ne 0 ] ; then
+      echo "Mount failed, not starting"
+      exit 1
+    fi
     start_master
     sleep 2
     start_worker NoMount
@@ -193,16 +210,17 @@ case "${WHAT}" in
     ;;
   workers)
     check_mount_mode $2
-    run_on_slaves $bin/tachyon-start.sh worker $2
+    $bin/tachyon-slaves.sh $bin/tachyon-start.sh worker $2 $TACHYON_MASTER_ADDRESS
     ;;
   restart_worker)
     restart_worker
     ;;
   restart_workers)
-    run_on_slaves $bin/tachyon-start.sh restart_worker
+    $bin/tachyon-slaves.sh $bin/tachyon-start.sh restart_worker
     ;;
   *)
     echo "Error: Invalid WHAT: $WHAT"
     echo -e "$Usage"
     exit 1
 esac
+sleep 2
