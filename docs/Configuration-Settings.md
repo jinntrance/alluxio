@@ -142,6 +142,11 @@ number.
   <td>/</td>
   <td>The comma-separated list of prefixes of the paths which are cacheable, separated by semi-colons. Tachyon will try to cache the cacheable file when it is read for the first time.</td>
 </tr>
+<tr>
+  <td>tachyon.master.web.threads</td>
+  <td>9</td>
+  <td>How many threads to use for the web server.</td>
+</tr>
 </table>
 
 # Worker Configuration
@@ -217,7 +222,7 @@ number.
   <td>Sets SO_SNDBUF for the socket; more details can be found in the socket man page.</td>
 </tr>
 <tr>
-  <td>tachyon.worker.network.netty.buffer.recieve</td>
+  <td>tachyon.worker.network.netty.buffer.receive</td>
   <td>platform specific</td>
   <td>Sets SO_RCVBUF for the socket; more details can be found in the socket man page.</td>
 </tr>
