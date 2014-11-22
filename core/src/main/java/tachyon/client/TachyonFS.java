@@ -1,3 +1,18 @@
+/*
+ * Licensed to the University of California, Berkeley under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to You under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package tachyon.client;
 
 import java.io.File;
@@ -536,9 +551,7 @@ public class TachyonFS extends AbstractTachyonFS {
 
   @Override
   public ClientFileInfo getFileStatus(int fileId, TachyonURI path) throws IOException {
-    validateUri(path);
-    ClientFileInfo info = mMasterClient.getFileStatus(fileId, path.getPath());
-    return info.getId() == -1 ? null : info;
+    return getFileStatus(fileId, path, false);
   }
 
   /**
@@ -575,11 +588,11 @@ public class TachyonFS extends AbstractTachyonFS {
     if (fileId != -1) {
       info = mIdToClientFileInfo.get(fileId);
       if (!useCachedMetadata || info == null) {
-        info = getFileStatus(fileId, TachyonURI.EMPTY_URI);
+        info = mMasterClient.getFileStatus(fileId, TachyonURI.EMPTY_URI.getPath());
         updated = true;
       }
 
-      if (info == null) {
+      if (info.getId() == -1) {
         mIdToClientFileInfo.remove(fileId);
         return null;
       }
@@ -588,11 +601,11 @@ public class TachyonFS extends AbstractTachyonFS {
     } else {
       info = mPathToClientFileInfo.get(path.getPath());
       if (!useCachedMetadata || info == null) {
-        info = getFileStatus(-1, path);
+        info = mMasterClient.getFileStatus(-1, path.getPath());
         updated = true;
       }
 
-      if (info == null) {
+      if (info.getId() == -1) {
         mPathToClientFileInfo.remove(path.getPath());
         return null;
       }
