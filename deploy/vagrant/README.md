@@ -1,134 +1,107 @@
-## What is Vagrant?
+This doc is for contributors on deploy module, for users, please go to the [online doc](http://alluxio.org/documentation/Getting-Started.html).
 
-Vagrant can create VM images (VirtualBox VMWare Fusion), Docker containers, and AWS and OpenStack
+## Tools
+
+### Vagrant
+
+[Vagrant](https://www.vagrantup.com), here is the [download link](https://www.vagrantup.com/downloads.html).
+
+#### What is Vagrant?
+
+Vagrant can create VM images (VirtualBox, VMWare Fusion), Docker containers, and AWS and OpenStack
 instances.
 
-## Why Use Vagrant?
+#### Why Use Vagrant?
 
-Installing a Tachyon cluster is a huge undertaking. Building a realistic and correct environment
-usually requires multifacted knowledge.
+Setting up an Alluxio cluster correctly with under filesystem and computation frameworks is a tedious huge undertaking. It requires not only expertise on both Alluxio and the related systems, but also expertise on the target deployment platform.
 
-Tachyon uses a variety of under filesystems. Some of these filesystems must be installed and
-configured on target systems that are different from development environment. Building identical VMs
-across all running environments accelerates development, testing, and adoption process.
+Vagrant makes it possible to predefine how to install and configure software on a "machine" which can be an aws instance, a virtualbox vm, a docker container or an openstack instance. Then with the same workflow, you can create the same environment on all these platforms.
 
-## What inside?
+### Ansible
 
-This directory contains Vagrant recipe to create VirtualBox images and Amazon EC2 instances and
-configurations to initialize Hadoop (both 1.x and 2.x) and GlusterFS.
+[Ansible](http://docs.ansible.com), here is the [download link](http://docs.ansible.com/intro_installation.html)
 
-Please download and install Vagrant (at least version 1.6.5). Once Vagrant is installed, starting an
-Tachyon cluster requires only `vagrant up` command. A two-VM cluster is then created. `vagrant
-destroy` command destroys the cluster.
+Ansible is a pure python package, so you need to have python installed, follow the docs in the link above.
 
-`tachyon/deploy/vagrant/init.yml` is the configuration file that sets different cluster parameters. They are explained
-below.
+#### What is Ansible?
 
-<table class="table">
-<tr>
-    <th>Parameter</th><th>Description</th><th>Values</th>
-</tr>
-<tr>
-    <td>Ufs</td><td>Tachyon Underfilesystem</td><td>glusterfs|hadoop2|hadoop1</td>
-</tr>
-<tr>
-    <td>Provider</td><td>Vagrant Providers</td><td>vb|aws|openstack|docker</td>
-</tr>
-<tr>
-    <td>Memory</td><td>Memory (in MB) to allocate for Virtualbox image</td><td>at least 1024</td>
-</tr>
-<tr>
-    <td>Total</td><td>Number of images to start</td><td>at least 1</td>
-</tr>
-<tr>
-    <td>Addresses</td><td>Internal IPs given to each VM. The last one is designated as Tachyon master.
-For VirtualBox, the addresses can be arbitrary.
-For AWS, the addresses should be within the same availability zone.
-For OpenStack, since the compute node instances use DHCP, these addresses are not used.
-For Docker provider, containers use DHCP, these addresses are not used.
-</td><td>IPv4 address string</td>
-</tr>
-</table>
+Ansible is a language and toolset to define how to provision (install software, configure the system). It allows you to manipulate remote servers on your laptop, working with any number of nodes in parallel!
 
-## VirtualBox Provider
+#### Why Use Ansible?
 
-Run command `vagrant up [--provider=virtualbox]` to start VirtualBox VM. After VM is up, login to
-the VM as `root` and password as `vagrant`.
+When setting up an Alluxio cluster, we need the ability to manipulate target machines in parallel, say, install java on all nodes. Ansible satisfies this requirement. It's supported by Vagrant and has simple syntax, so we adopt it as the provisioning tool.
 
-## AWS Provider
+## Extension
 
-Install aws vagrant plugin first. To date, 0.5.0 plugin is tested.
+You can extend deploy module by adding new under layer filesystems or new computation frameworks on top of Alluxio.
 
-    vagrant plugin install vagrant-aws
+It's enough for you to be able to write bash and know [what is ansible playbook](http://docs.ansible.com/playbooks.html). Then read `deploy/vagrant/provision` directory to make sure you understand existing code base.
 
-Then update configurations in `conf/ec2-config.yml` and shell environment variables `AWS_ACCESS_KEY`
-and `AWS_SECRET_KEY`.
-
-Run `./run_aws.sh` to create EC2 VPC instances.
-
-## OpenStack Provider
-
-Install openstack vagrant plugin first. To date, 0.8.0 plugin is tested.
-
-    vagrant plugin install vagrant-openstack-plugin
-
-Then update configurations in `conf/openstack-config.yml` and shell environment variables
-`OS_USERNAME` and `OS_PASSWORD`.
-
-Run `run_openstack.sh` to create OpenStack Compute Node instances.
-
-## Docker Provider
-
-Run command `./run_docker.sh` to start containers. After containers are up, login as `root` and password as `vagrant`.
-
-## Examples of Running VirtualBox Clusters Using Glusterfs as Underfilesystem
-
-A sample `conf/init.yml.glusterfs` is provided. Copy or link it to `init.yml`. Make sure parameter
-`Ufs` is `glusterfs` and `Provider` is `vb`. Change the rest of parameters to what you want if
-necessary.
-
-Then start the clusters.
-
-    vagrant up --provider=virtualbox
-
-## Examples of Running AWS Clusters Using HDFS 2.4 as Underfilesystem
-
-A sample `conf/init.yml.aws` is provided. Copy or link it to `init.yml`. Make sure parameter `Ufs`
-is `hadoop2` and `Provider` is `aws`. Change the rest of parameters, especially network addresses,
-to what you want if necessary.
-
-Then start the clusters.
-
-    ./run_aws.sh
+Unless the semantic of an ansible module is straightforward and the syntax is much
+simpler than bash, we suggest using bash script with ansible's `shell` module because
+it's easier for others to understand since most developers know bash.
 
 
-## Examples of Running OpenStack Compute Node Clusters Using HDFS 2.4 as Underfilesystem
+### Add new under layer filesystem
 
-A sample `conf/init.yml.openstack` is provided. Copy or link it to `init.yml`. Make sure parameter
-`Ufs` is `hadoop2` and `Provider` is `openstack`. The `Addresses` are currently not used.
+create new directory `roles/ufs_{filesystem_name}` with structure:
 
-Then start the clusters.
+	|-- files
+	|---- compile_alluxio.sh    # how to compile Alluxio against this ufs
+	|---- config_alluxio.sh     # there are ufs related configurations in Alluxio like ALLUXIO_UNDERFS_ADDRESS
+	|---- ...
+	|-- tasks
+	|---- download_release.yml  # how to download the binary release of this ufs to a specific directory
+	|---- config.yml            # how to configure the ufs
+	|---- rsync_dist.yml        # only master will download/compile, how do slaves rsync the binary distribution from master
+	|---- start.yml             # how to start the ufs
 
-    ./run_openstack.sh
+Then compose the task ymls in playbook.yml, configurations should be in `conf/ufs.yml`.
 
+### Add new framework on top of Alluxio
 
-## Examples of Running Docker containers Using HDFS 2.4 as Underfilesystem
+create new directory `roles/{framework_name}` with structure:
 
-A sample `conf/init.yml.docker` is provided. Copy or link it to `init.yml`. Make sure parameter
-`Ufs` is `hadoop2` and `Provider` is `docker`. The `Addresses` are currently not used.
+	|-- files
+	|---- ...
+	|-- tasks
+	|---- download_release.yml   # if you want to support deploying releases instead of downloading source code and compiling, this file specifies how to download binary releases of this framework
+	|---- clone_remote_repo.yml  # how to git clone the repo
+	|---- compile.yml            # how to compile
+	|---- config.yml             # how to configure the framework
+	|---- rsync_dist.yml         # how do slaves rsync the binary distribution from master. only master will download/compile
+	|---- start.yml              # how to start the framework
 
-Then start the clusters.
+Then compose the task ymls in playbook.yml, configurations should be in `conf/{framework_name}.yml`.
 
-    ./run_docker.sh
+**Interface**
 
+For these two extension tasks, the "Interface" is the combination of:
 
-## Use Tachyon Cluster
+1. directory structure
+2. name and semantic of the yml files
 
-Once clusters are up running, tachyon is installed and configured. The tachyon source directory is
-mapped to `/tachyon` directory on each image. Editions are visible on the images.
+read existing roles/ufs_xxx and roles/spark, you'll understand the interface.
 
-## Destroy Tachyon Cluster
+**Implementation**
 
-To stop and destroy the images, run command
+If you need to write bash to implement the interfaces, put them under files/.
 
-    vagrant destroy [-f]
+If the implementation is related to ufs, put them under ufs_xxx/files, like `ufs_hadoop2/compile_alluxio.sh`, `ufs_hadoop2/compile_spark.sh`, etc.
+
+Then include the bash scripts with ansible's `script` module in roles/xxx/tasks/*.yml.
+
+**Conditional Variables**
+
+If you need to use conditional variables when composing tasks in playbook.yml, pass them in `ans.extra_vars` in Vagrantfile.
+
+**Relative Paths**
+
+1. when you want to use files under the `files` directory in the `tasks` directory of the same role, reference the file name directly.
+
+	e.x. If you want to use `roles/role1/files/shell1.sh` in `roles/role1/tasks/task1.yml`, directly write `shell1.sh` in modules like `script: shell1.sh`, `synchronize: shell1.sh`, `copy: shell1.sh`, etc. Ansible
+will take care of relative path referencing for you.
+
+2. other paths in roles/xxx/tasks is relative to the current task yml file.
+
+	e.x. If `roles/alluxio/tasks/compile.yml` wants to include `roles/lib/tasks/maven.yml`, it should write `include: ../../lib/tasks/maven.yml`
